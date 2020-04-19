@@ -67,7 +67,7 @@ def check_symmetric(matrix, transpose_matrix, size):
             found = False
             for item_t in transpose_matrix[i]:
                 if item[1] == item_t[1]:
-                    if abs(item[0] - item_t[0]) == 0:
+                    if abs(item[0] - item_t[0]) < eps:
                         found = True
 
             if found is False:
@@ -79,16 +79,33 @@ def check_symmetric(matrix, transpose_matrix, size):
 def product_sparse_with_array(matrix, a):
     b = []
     for j in range(len(a)):
-        s = 0
+        res = 0
         for f in matrix[j]:
-            s += f[0] * a[f[1]]
-        b.append(s)
+            res += f[0] * a[f[1]]
+        b.append(res)
     return b
+
+
+def swap(matrix, row1, row2, col):
+    for i in range(col):
+        matrix[row1][i], matrix[row2][i] = matrix[row2][i], matrix[row1][i]
+
+    return matrix
+
+
+# Scalar product between 2 arrays
+def scalar_product(first_arr, second_arr):
+    ans = 0
+    for i in range(len(first_arr)):
+        ans += first_arr[i] * second_arr[i]
+
+    return ans
 
 
 # Method of power
 def method_of_power(matrix, size):
     if check_symmetric(matrix, convert_to_transpose(matrix, size), size) is True:
+        # Generated b array
         arr = np.random.randint(0, 100, n)
         arr_norm = np.linalg.norm(arr)
 
@@ -98,13 +115,15 @@ def method_of_power(matrix, size):
         # w = A * v
         w = product_sparse_with_array(matrix, v)
 
-        complex_number = np.dot(w, v)  # lambda, valoarea proprie de modul maxim
+        complex_number = scalar_product(w, v)  # lambda, valoarea proprie de modul maxim
         k = 0
         k_max = 1000000
-        while np.linalg.norm(np.subtract(w, complex_number * v)) > n * eps and k < k_max:
+        while True:
+            if np.linalg.norm(np.subtract(w, complex_number * v)) > n * eps and k < k_max:
+                break
             v = (1 / np.linalg.norm(w)) * np.array(w)
             w = product_sparse_with_array(matrix, v)
-            complex_number = np.dot(w, v)
+            complex_number = scalar_product(w, v)
             k += 1
 
         if k > k_max:
@@ -116,7 +135,7 @@ def method_of_power(matrix, size):
 
 if __name__ == '__main__':
     # Reading the input file and saving the matrix.
-    n, generated_sparse_matrix_file = convert_to_sparse_matrix_from_file("input/a_300.txt")
+    n, generated_sparse_matrix_file = convert_to_sparse_matrix_from_file("input/a_500.txt")
     transpose_matrix_file = convert_to_transpose(generated_sparse_matrix_file, n)
 
     sparse_m = generate_random_sparse_matrix(n, n)
@@ -131,6 +150,8 @@ if __name__ == '__main__':
     # Method of power used on input matrix
     method_of_power(generated_sparse_matrix_file, n)
 
+    print("\n-----------------------------------------------------------\n")
+
     # Method of power used on random generated matrix
     method_of_power(generated_sparse_matrix, n)
 
@@ -138,58 +159,68 @@ if __name__ == '__main__':
 
     # SVD using library
     n_prim, p_prim = 6, 9
-    svg_matrix = np.random.rand(p_prim, n_prim)
 
-    # U, S, V from SVD
-    u, s, v = np.linalg.svd(svg_matrix, full_matrices=True)
+    if n_prim < p_prim:
+        svg_matrix = np.random.rand(p_prim, n_prim)
 
-    print(f"U using SVD from numpy library: \n{u}\n")
-    print(f"S using SVD from numpy library: \n{s}\n")
-    print(f"V using SVD from numpy library: \n{v}\n")
+        # U, S, V from SVD
+        u, s, vh = np.linalg.svd(svg_matrix, full_matrices=True)
 
-    # Matrix rannk
-    rank = np.linalg.matrix_rank(svg_matrix)
+        print(f"U using SVD from numpy library: \n{u}\n")
+        print(f"S using SVD from numpy library: \n{s}\n")
+        print(f"V using SVD from numpy library: \n{vh}\n")
 
-    print(f"Rank of matrix using numpy library: {rank}\n")
+        # Matrix rank numpy
+        rank = np.linalg.matrix_rank(svg_matrix)
 
-    # Lambda
-    condition_number = np.linalg.cond(svg_matrix)
+        print(f"Rank of matrix using numpy library: {rank}\n")
 
-    print(f"Condition number using numpy library: {condition_number}\n")
+        # Matrix rank
+        print(f"Rank of matrix from scratch: {len([number for number in s if number >= 0])}\n")
 
-    # MP for A
-    mp_normal_matrix = np.linalg.pinv(svg_matrix)
+        # Lambda
+        condition_number = np.linalg.cond(svg_matrix)
 
-    print(f"Moore Penrose for A using numpy library: \n{mp_normal_matrix}\n")
+        print(f"Condition number using numpy library: {condition_number}\n")
 
-    # MP for u.T * s * v
-    mat = np.zeros((p_prim, n_prim), dtype=complex)
-    mat[:n_prim, :n_prim] = np.diag(s)
+        # Lambda 2
+        condition_number_2 = max(s) / min(s)
 
-    a_I = np.dot(u, np.dot(mat, v))
-    mp_transpose_u = np.linalg.pinv(a_I)
+        print(f"Condition number without using numpy library: {condition_number_2}\n")
 
-    print(f"Moore Penrose for A^I = VSU^T using numpy library: \n{mp_transpose_u}\n")
+        # MP for A
+        mp_normal_matrix = np.linalg.pinv(svg_matrix)
 
-    # b array
-    b_arr = np.random.randint(0, 100, p_prim)
-    x_I = a_I.T * b_arr
+        print(f"Moore Penrose for A using numpy library: \n{mp_normal_matrix}\n")
 
-    # X^I
-    print(f"X^I: \n{x_I}\n")
+        # MP for u.T * s * v
+        mat = np.zeros((p_prim, n_prim), dtype=complex)
+        mat[:n_prim, :n_prim] = np.diag(s)
 
-    # x from Ax = b
-    x = np.linalg.solve(svg_matrix.T.dot(svg_matrix), svg_matrix.T.dot(b_arr))
-    print(f"Solution of the equation Ax=b is: \n{x}\n")
+        a_I = np.dot(u, np.dot(mat, vh))
+        mp_transpose_u = np.linalg.pinv(a_I)
 
-    # ||b - Ax||
-    first_norm = np.linalg.norm(np.subtract(b_arr, np.dot(svg_matrix, x)))
-    print(f"||b - Ax|| is equal to: {first_norm}\n")
+        print(f"Moore Penrose for A^I = VSU^T using numpy library: \n{mp_transpose_u}\n")
 
-    # A^j = (A^T * A)^-1 * A^T
-    a_J = np.dot(np.linalg.inv((np.dot(svg_matrix.T, svg_matrix))), svg_matrix.T)
-    print(f"A^J = (A^T * A)^-1 * A^T:\n{a_J}\n")
+        # b array
+        b_arr = np.random.randint(0, 100, p_prim)
+        x_I = a_I.T * b_arr
 
-    # ||A^I - A^J||
-    second_norm = np.linalg.norm(np.subtract(a_I.T, a_J))
-    print(f"||A^I - A^J|| is equal to: {second_norm}\n")
+        # X^I
+        print(f"X^I: \n{x_I}\n")
+
+        # x from Ax = b
+        x = np.linalg.solve(svg_matrix.T.dot(svg_matrix), svg_matrix.T.dot(b_arr))
+        print(f"Solution of the equation Ax=b is: \n{x}\n")
+
+        # ||b - Ax||
+        first_norm = np.linalg.norm(np.subtract(b_arr, np.dot(svg_matrix, x)))
+        print(f"||b - Ax|| is equal to: {first_norm}\n")
+
+        # A^j = (A^T * A)^-1 * A^T
+        a_J = np.dot(np.linalg.inv((np.dot(svg_matrix.T, svg_matrix))), svg_matrix.T)
+        print(f"A^J = (A^T * A)^-1 * A^T:\n{a_J}\n")
+
+        # ||A^I - A^J||
+        second_norm = np.linalg.norm(np.subtract(a_I.T, a_J))
+        print(f"||A^I - A^J|| is equal to: {second_norm}\n")
