@@ -67,11 +67,12 @@ def check_symmetric(matrix, transpose_matrix, size):
             found = False
             for item_t in transpose_matrix[i]:
                 if item[1] == item_t[1]:
-                    if abs(item[0] - item_t[0]) < eps:
+                    if abs(item[0] - item_t[0]) > eps:
                         found = True
 
-            if found is False:
+            if found is True:
                 return False
+
     return True
 
 
@@ -84,13 +85,6 @@ def product_sparse_with_array(matrix, a):
             res += f[0] * a[f[1]]
         b.append(res)
     return b
-
-
-def swap(matrix, row1, row2, col):
-    for i in range(col):
-        matrix[row1][i], matrix[row2][i] = matrix[row2][i], matrix[row1][i]
-
-    return matrix
 
 
 # Scalar product between 2 arrays
@@ -135,14 +129,8 @@ def method_of_power(matrix, size):
 
 if __name__ == '__main__':
     # Reading the input file and saving the matrix.
-    n, generated_sparse_matrix_file = convert_to_sparse_matrix_from_file("input/a_500.txt")
+    n, generated_sparse_matrix_file = convert_to_sparse_matrix_from_file("input/a_2020.txt")
     transpose_matrix_file = convert_to_transpose(generated_sparse_matrix_file, n)
-
-    sparse_m = generate_random_sparse_matrix(n, n)
-    generated_sparse_matrix = convert_to_sparse_matrix(sparse_m, n)
-
-    # Check symmetric value for generated matrix
-    print(check_symmetric(generated_sparse_matrix, convert_to_transpose(generated_sparse_matrix, n), n))
 
     # Check symmetric value for input matrix
     print(check_symmetric(generated_sparse_matrix_file, convert_to_transpose(generated_sparse_matrix_file, n), n))
@@ -150,10 +138,16 @@ if __name__ == '__main__':
     # Method of power used on input matrix
     method_of_power(generated_sparse_matrix_file, n)
 
-    print("\n-----------------------------------------------------------\n")
-
     # Method of power used on random generated matrix
-    method_of_power(generated_sparse_matrix, n)
+    if n > 500:
+        print("\n-----------------------------------------------------------\n")
+        sparse_m = generate_random_sparse_matrix(n, n)
+        generated_sparse_matrix = convert_to_sparse_matrix(sparse_m, n)
+
+        # Check symmetric value for generated matrix
+        print(check_symmetric(generated_sparse_matrix, convert_to_transpose(generated_sparse_matrix, n), n))
+
+        method_of_power(generated_sparse_matrix, n)
 
     print("\n-----------------------------------------------------------\n")
 
